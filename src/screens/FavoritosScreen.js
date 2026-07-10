@@ -1,25 +1,30 @@
 // src/screens/FavoritosScreen.js
-// Lista de favoritos: READ (listar), UPDATE (nota/comentário), DELETE (remover).
-// (Versão do Passo 9 — será refatorada com o tema no Passo 13b.)
+// Lista de favoritos (READ, UPDATE, DELETE) — agora consumindo o tema.
 
 import { useState, useCallback } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity,
-    FlatList, Image, StyleSheet, ActivityIndicator,
+    View, Text, TextInput, FlatList, Image,
+    StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { IMAGE_BASE } from '../services/tmdb';
 import {
     listarFavoritos, atualizarFavorito, removerFavorito,
 } from '../services/favoritos';
+import { useTema } from '../ThemeContext';
+import { espacos, fontes, raios } from '../theme';
+import Botao from '../components/Botao';
+import BotaoTema from '../components/BotaoTema';
 
 export default function FavoritosScreen() {
+    const { tema } = useTema();
+    const estilos = criarEstilos(tema);
+
     const [favoritos, setFavoritos] = useState([]);
     const [carregando, setCarregando] = useState(false);
     const [mensagem, setMensagem] = useState(null);
 
-    // Controle da edição: qual item está sendo editado e os valores digitados.
-    const [emEdicao, setEmEdicao] = useState(null);   // id do favorito em edição
+    const [emEdicao, setEmEdicao] = useState(null);
     const [notaDigitada, setNotaDigitada] = useState('');
     const [comentarioDigitado, setComentarioDigitado] = useState('');
 
@@ -36,7 +41,6 @@ export default function FavoritosScreen() {
         }
     }
 
-    // Recarrega sempre que a aba ganha foco (inclusive na primeira vez).
     useFocusEffect(
         useCallback(() => {
             carregarLista();
@@ -57,7 +61,7 @@ export default function FavoritosScreen() {
         }
         try {
             await atualizarFavorito(fav.id, {
-                ...fav,                     // mantém os campos que não mudaram
+                ...fav,
                 nota,
                 comentario: comentarioDigitado,
             });
@@ -83,9 +87,12 @@ export default function FavoritosScreen() {
 
     return (
         <View style={estilos.container}>
-            <Text style={estilos.titulo}>Meus Favoritos</Text>
+            <View style={estilos.linhaTitulo}>
+                <Text style={estilos.titulo}>Meus Favoritos</Text>
+                <BotaoTema />
+            </View>
 
-            {carregando && <ActivityIndicator size="large" />}
+            {carregando && <ActivityIndicator size="large" color={tema.cores.primaria} />}
             {mensagem && <Text style={estilos.mensagem}>{mensagem}</Text>}
 
             <FlatList
@@ -107,7 +114,7 @@ export default function FavoritosScreen() {
                             />
                         ) : (
                             <View style={[estilos.poster, estilos.semPoster]}>
-                                <Text>Sem pôster</Text>
+                                <Text style={estilos.textoSecundario}>Sem pôster</Text>
                             </View>
                         )}
 
@@ -122,6 +129,7 @@ export default function FavoritosScreen() {
                                     <TextInput
                                         style={estilos.campo}
                                         placeholder="Nota (0 a 10)"
+                                        placeholderTextColor={tema.cores.textoSecundario}
                                         keyboardType="numeric"
                                         value={notaDigitada}
                                         onChangeText={setNotaDigitada}
@@ -129,44 +137,31 @@ export default function FavoritosScreen() {
                                     <TextInput
                                         style={estilos.campo}
                                         placeholder="Comentário"
+                                        placeholderTextColor={tema.cores.textoSecundario}
                                         value={comentarioDigitado}
                                         onChangeText={setComentarioDigitado}
                                     />
                                     <View style={estilos.linhaBotoes}>
-                                        <TouchableOpacity
-                                            style={[estilos.botaoPequeno, estilos.botaoSalvar]}
-                                            onPress={() => salvarEdicao(item)}
-                                        >
-                                            <Text style={estilos.botaoTexto}>Salvar</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[estilos.botaoPequeno, estilos.botaoCancelar]}
-                                            onPress={() => setEmEdicao(null)}
-                                        >
-                                            <Text style={estilos.botaoTexto}>Cancelar</Text>
-                                        </TouchableOpacity>
+                                        <Botao titulo="Salvar" cor="sucesso" pequeno
+                                            onPress={() => salvarEdicao(item)} />
+                                        <Botao titulo="Cancelar" cor="textoSecundario" pequeno
+                                            onPress={() => setEmEdicao(null)} />
                                     </View>
                                 </View>
                             ) : (
                                 // ----- MODO LEITURA -----
                                 <View>
-                                    <Text style={estilos.nota}>Nota: {item.nota} / 10</Text>
+                                    <Text style={estilos.nota}>
+                                        {'⭐'.repeat(Math.round((item.nota || 0) / 2)) || '☆'} {item.nota}/10
+                                    </Text>
                                     <Text style={estilos.comentario}>
                                         {item.comentario || 'Sem comentário.'}
                                     </Text>
                                     <View style={estilos.linhaBotoes}>
-                                        <TouchableOpacity
-                                            style={[estilos.botaoPequeno, estilos.botaoEditar]}
-                                            onPress={() => iniciarEdicao(item)}
-                                        >
-                                            <Text style={estilos.botaoTexto}>✏️ Editar</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[estilos.botaoPequeno, estilos.botaoExcluir]}
-                                            onPress={() => excluir(item)}
-                                        >
-                                            <Text style={estilos.botaoTexto}>🗑️ Excluir</Text>
-                                        </TouchableOpacity>
+                                        <Botao titulo="✏️ Editar" pequeno
+                                            onPress={() => iniciarEdicao(item)} />
+                                        <Botao titulo="🗑️ Excluir" cor="perigo" pequeno
+                                            onPress={() => excluir(item)} />
                                     </View>
                                 </View>
                             )}
@@ -178,34 +173,57 @@ export default function FavoritosScreen() {
     );
 }
 
-const estilos = StyleSheet.create({
-    container: { flex: 1, padding: 16, paddingTop: 48, backgroundColor: '#fff' },
-    titulo: { fontSize: 22, fontWeight: 'bold', marginBottom: 12 },
-    mensagem: { color: '#16A34A', marginBottom: 8, fontWeight: 'bold' },
-    vazio: { color: '#666', marginTop: 24, textAlign: 'center' },
+const criarEstilos = (tema) => StyleSheet.create({
+    container: {
+        flex: 1, padding: espacos.medio, paddingTop: 48,
+        backgroundColor: tema.cores.fundo,
+    },
+    linhaTitulo: {
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: espacos.medio,
+    },
+    titulo: {
+        fontSize: fontes.titulo, fontWeight: 'bold',
+        color: tema.cores.textoPrincipal,
+    },
+    mensagem: {
+        color: tema.cores.sucesso, marginBottom: espacos.pequeno,
+        fontWeight: 'bold',
+    },
+    vazio: {
+        color: tema.cores.textoSecundario, marginTop: espacos.grande,
+        textAlign: 'center',
+    },
     card: {
-        flexDirection: 'row', marginBottom: 12, borderWidth: 1,
-        borderColor: '#eee', borderRadius: 8, overflow: 'hidden',
+        flexDirection: 'row', marginBottom: espacos.medio,
+        borderWidth: 1, borderColor: tema.cores.borda,
+        borderRadius: raios.card, overflow: 'hidden',
+        backgroundColor: tema.cores.card,
+        elevation: 2,
+        shadowColor: '#000', shadowOpacity: 0.08,
+        shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
     },
     poster: { width: 80, height: 120 },
     semPoster: {
-        backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: tema.cores.borda,
+        alignItems: 'center', justifyContent: 'center',
     },
-    info: { flex: 1, padding: 8 },
-    tituloFilme: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-    nota: { color: '#F59E0B', fontWeight: 'bold', marginBottom: 2 },
-    comentario: { fontSize: 13, color: '#444', marginBottom: 6 },
+    info: { flex: 1, padding: espacos.pequeno },
+    tituloFilme: {
+        fontSize: fontes.subtitulo, fontWeight: 'bold',
+        color: tema.cores.textoPrincipal, marginBottom: 4,
+    },
+    nota: { color: tema.cores.alerta, fontWeight: 'bold', marginBottom: 2 },
+    comentario: {
+        fontSize: fontes.corpo, color: tema.cores.textoSecundario,
+        marginBottom: espacos.pequeno,
+    },
     campo: {
-        borderWidth: 1, borderColor: '#ccc', borderRadius: 6,
-        paddingHorizontal: 8, height: 36, marginBottom: 6,
+        borderWidth: 1, borderColor: tema.cores.borda,
+        borderRadius: raios.campo, paddingHorizontal: espacos.pequeno,
+        height: 36, marginBottom: 6,
+        color: tema.cores.textoPrincipal, backgroundColor: tema.cores.fundo,
     },
-    linhaBotoes: { flexDirection: 'row', gap: 8 },
-    botaoPequeno: {
-        borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10,
-    },
-    botaoSalvar: { backgroundColor: '#16A34A' },
-    botaoCancelar: { backgroundColor: '#94A3B8' },
-    botaoEditar: { backgroundColor: '#2563EB' },
-    botaoExcluir: { backgroundColor: '#DC2626' },
-    botaoTexto: { color: '#fff', fontWeight: 'bold' },
+    textoSecundario: { color: tema.cores.textoSecundario },
+    linhaBotoes: { flexDirection: 'row', gap: espacos.pequeno },
 });
