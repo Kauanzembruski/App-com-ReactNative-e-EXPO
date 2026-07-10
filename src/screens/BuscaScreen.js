@@ -1,10 +1,9 @@
 // src/screens/BuscaScreen.js
 // Tela de busca de filmes no TMDB — agora consumindo o tema.
 
-import { useState } from 'react';
 import {
     View, Text, TextInput, FlatList, Image,
-    StyleSheet, ActivityIndicator,
+    StyleSheet, ActivityIndicator, TouchableOpacity
 } from 'react-native';
 import { buscarFilmes, IMAGE_BASE } from '../services/tmdb';
 import { adicionarFavorito, listarFavoritos } from '../services/favoritos';
@@ -12,8 +11,11 @@ import { useTema } from '../ThemeContext';
 import { espacos, fontes, raios } from '../theme';
 import Botao from '../components/Botao';
 import BotaoTema from '../components/BotaoTema';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
-export default function BuscaScreen() {
+
+export default function BuscaScreen({ navigation }) {
     const { tema } = useTema();
     const estilos = criarEstilos(tema); // estilos recalculados a cada troca de tema
 
@@ -22,6 +24,20 @@ export default function BuscaScreen() {
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState(null);
     const [mensagem, setMensagem] = useState(null);
+    const [idsFavoritados, setIdsFavoritados] = useState([]);
+
+    useFocusEffect(
+        useCallback(() => {
+            listarFavoritos()
+                .then((favs) =>
+                    setIdsFavoritados(
+                        favs.map((f) => Number(f.tmdbId))
+                    )
+                )
+                .catch(console.error);
+        }, [])
+    );
+
 
     async function aoBuscar() {
         if (!texto.trim()) return;
@@ -55,6 +71,7 @@ export default function BuscaScreen() {
                 comentario: '',
             });
             setMensagem(`"${filme.title}" adicionado aos favoritos!`);
+            setIdsFavoritados((atual) => [...atual, filme.id]);
         } catch (e) {
             console.error(e);
             setMensagem('Não foi possível salvar o favorito.');
@@ -90,7 +107,10 @@ export default function BuscaScreen() {
                 data={filmes}
                 keyExtractor={(item) => String(item.id)}
                 renderItem={({ item }) => (
-                    <View style={estilos.card}>
+                    <TouchableOpacity
+                        style={estilos.card}
+                        onPress={() => navigation.navigate('Detalhes', { filme: item })}
+                    >
                         {item.poster_path ? (
                             <Image
                                 source={{ uri: IMAGE_BASE + item.poster_path }}
@@ -110,15 +130,16 @@ export default function BuscaScreen() {
                                 {item.overview || 'Sem sinopse disponível.'}
                             </Text>
                             <View style={estilos.linhaBotoes}>
-                                <Botao
-                                    titulo="⭐ Favoritar"
-                                    cor="sucesso"
-                                    pequeno
-                                    onPress={() => aoFavoritar(item)}
-                                />
+                                {idsFavoritados.includes(item.id) ? (
+                                    <Botao titulo="✓ Favoritado" cor="textoSecundario" pequeno
+                                        onPress={() => { }} />
+                                ) : (
+                                    <Botao titulo="⭐ Favoritar" cor="sucesso" pequeno
+                                        onPress={() => aoFavoritar(item)} />
+                                )}
                             </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 )}
             />
         </View>

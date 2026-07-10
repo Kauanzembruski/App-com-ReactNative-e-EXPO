@@ -25,6 +25,7 @@ export default function FavoritosScreen() {
     const [mensagem, setMensagem] = useState(null);
 
     const [emEdicao, setEmEdicao] = useState(null);
+    const [confirmandoExclusao, setConfirmandoExclusao] = useState(null); // id
     const [notaDigitada, setNotaDigitada] = useState('');
     const [comentarioDigitado, setComentarioDigitado] = useState('');
 
@@ -98,6 +99,8 @@ export default function FavoritosScreen() {
             <FlatList
                 data={favoritos}
                 keyExtractor={(item) => String(item.id)}
+                refreshing={carregando}
+                onRefresh={carregarLista}
                 ListEmptyComponent={
                     !carregando && (
                         <Text style={estilos.vazio}>
@@ -160,8 +163,20 @@ export default function FavoritosScreen() {
                                     <View style={estilos.linhaBotoes}>
                                         <Botao titulo="✏️ Editar" pequeno
                                             onPress={() => iniciarEdicao(item)} />
-                                        <Botao titulo="🗑️ Excluir" cor="perigo" pequeno
-                                            onPress={() => excluir(item)} />
+                                        {confirmandoExclusao === item.id ? (
+                                            <>
+                                                <Botao titulo="Confirmar?" cor="perigo" pequeno
+                                                    onPress={() => {
+                                                        setConfirmandoExclusao(null);
+                                                        excluir(item);
+                                                    }} />
+                                                <Botao titulo="Não" cor="textoSecundario" pequeno
+                                                    onPress={() => setConfirmandoExclusao(null)} />
+                                            </>
+                                        ) : (
+                                            <Botao titulo="🗑️ Excluir" cor="perigo" pequeno
+                                                onPress={() => setConfirmandoExclusao(item.id)} />
+                                        )}
                                     </View>
                                 </View>
                             )}

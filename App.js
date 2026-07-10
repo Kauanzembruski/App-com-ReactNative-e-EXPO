@@ -6,7 +6,11 @@ import { Text } from 'react-native';
 import { ThemeProvider, useTema } from './src/ThemeContext';
 import BuscaScreen from './src/screens/BuscaScreen';
 import FavoritosScreen from './src/screens/FavoritosScreen';
+import { Ionicons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import DetalhesScreen from './src/screens/DetalhesScreen';
 
+const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Componente interno: precisa existir para poder LER o tema,
@@ -29,13 +33,21 @@ function Navegacao() {
       >
         <Tab.Screen
           name="Buscar"
-          component={BuscaScreen}
-          options={{ tabBarIcon: () => <Text>🔍</Text> }}
+          component={PilhaBusca}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="search" color={color} size={size} />
+            ),
+          }}
         />
         <Tab.Screen
           name="Favoritos"
           component={FavoritosScreen}
-          options={{ tabBarIcon: () => <Text>⭐</Text> }}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="star" color={color} size={size} />
+            ),
+          }}
         />
       </Tab.Navigator>
     </NavigationContainer>
@@ -47,5 +59,22 @@ export default function App() {
     <ThemeProvider>
       <Navegacao />
     </ThemeProvider>
+  );
+}
+
+function PilhaBusca() {
+  const { tema } = useTema();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: tema.cores.card },
+        headerTintColor: tema.cores.textoPrincipal,
+      }}
+    >
+      <Stack.Screen name="Busca" component={BuscaScreen}
+        options={{ headerShown: false }} />
+      <Stack.Screen name="Detalhes" component={DetalhesScreen}
+        options={{ title: 'Detalhes do filme' }} />
+    </Stack.Navigator>
   );
 }

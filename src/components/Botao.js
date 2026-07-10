@@ -33,3 +33,4 @@ const estilos = StyleSheet.create({
     pequeno: { paddingVertical: 6, paddingHorizontal: 10 },
     texto: { fontWeight: 'bold', fontSize: fontes.corpo },
 });
+
